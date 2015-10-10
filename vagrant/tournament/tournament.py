@@ -75,7 +75,25 @@ def playerStandings():
         wins: the number of matches the player has won
         matches: the number of matches the player has played
     """
+    db = psycopg2.connect("dbname=tournament")
+    c = db.cursor()
+    query = '''
+    CREATE VIEW standing AS
+        SELECT players.player_id,
+               players.name,
+               COALESCE(SUM(matches.win),0) as wins,
+               COUNT(DISTINCT matches.match_num) as matches
+        FROM players LEFT JOIN matches
+        ON players.player_id = matches.player_id
+        GROUP BY players.player_id
+        ORDER BY wins DESC;
 
+    SELECT * FROM standing;
+    '''
+    c.execute(query)
+    standing = c.fetchall()
+    db.close()
+    return standing
 
 def reportMatch(winner, loser):
     """Records the outcome of a single match between two players.
@@ -84,6 +102,23 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
+    db = psycopg2.connect("dbname=tournament")
+    c = db.cursor()
+    query='''
+    SELECT NEXTVAL('number');
+    '''
+    c.execute(query)
+    n = c.fetchone()[0]
+    query = '''
+    insert into matches values (%s, %s, 1);
+    '''
+    c.execute(query, (n,winner))
+    query='''
+    insert into matches values (%s, %s, 0);
+    '''
+    c.execute(query, (n,loser))
+    db.commit()
+    db.close()
 
 
 def swissPairings():
@@ -101,3 +136,15 @@ def swissPairings():
         id2: the second player's unique id
         name2: the second player's name
     """
+    standings=playerStandings()
+    ranking=0
+    matches=[]
+    for round in range(0,int(countPlayers()/2.)):
+
+        matches.append((standings[ranking][0],
+                        standings[ranking][1],
+                        standings[ranking+1][0],
+                        standings[ranking+1][1])
+                      )
+        ranking+=2
+    return matches
