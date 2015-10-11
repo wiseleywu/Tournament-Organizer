@@ -124,16 +124,35 @@ def testPairings():
             "After one match, players with one win should be paired.")
     print "8. After one match, players with one win are paired."
 
+def testOMW():
+    deleteMatches()
+    deletePlayers()
+    names=['Georgiana Monteleon',
+           'Earlie Seward','Kizzy Higgin','Abdul Ulm','Theressa Kemmer',
+           'Denis Redington','Anita Matus','Delila Palacios','urtis Sollers',
+           'Beatrice Jolley','Marcelle Rahm','Tania Rishel','Ivana Griffey',
+           'Delmy Paluch','Shona Baity','Lula Benavidez','Genny Tapia',
+           'Queen Roque','Ervin Kissane','Branda Eldridge','Debbie Kyker',
+           'Idalia Hacker','Geoffrey Honda','Shayna Cessna','Sadie Parkhill',
+           'Gertha Kyllonen','Eliseo Lettinga','Norbert Mannella',
+           'Noel King','James Franco']
+    for name in names:
+        registerPlayer(name)
+    standings = playerStandings()
+    for n in range(5):
+        pairings = swissPairings()
+        for pairing in pairings:
+            reportMatch(pairing[0],pairing[2])
 
 if __name__ == '__main__':
-    testDeleteMatches()
-    testDelete()
-    testCount()
-    testRegister()
-    testRegisterCountDelete()
-    testStandingsBeforeMatches()
-    testReportMatches()
-    testPairings()
+#    testDeleteMatches()
+#    testDelete()
+#    testCount()
+#    testRegister()
+#    testRegisterCountDelete()
+#    testStandingsBeforeMatches()
+#    testReportMatches()
+#    testPairings()
+    testOMW()
+    print playerStandings()
     print "Success!  All tests pass!"
-
-

@@ -78,17 +78,35 @@ def playerStandings():
     db = psycopg2.connect("dbname=tournament")
     c = db.cursor()
     query = '''
-    CREATE VIEW standing AS
+    CREATE VIEW omw AS
+      SELECT x.player_id,
+             SUM(y.omw) as omw
+      FROM
+      (
+        SELECT DISTINCT player_id, play_against
+        FROM matches
+      ) as x
+      JOIN
+      (
         SELECT players.player_id,
-               players.name,
-               COALESCE(SUM(matches.win),0) as wins,
-               COUNT(DISTINCT matches.match_num) as matches
+               COALESCE(SUM(matches.win),0) as omw
         FROM players LEFT JOIN matches
         ON players.player_id = matches.player_id
         GROUP BY players.player_id
-        ORDER BY wins DESC;
+      ) as y
+      ON x.play_against = y.player_id
+      GROUP BY 1
+      ORDER BY 2 DESC;
 
-    SELECT * FROM standing;
+    SELECT players.player_id,
+           players.name,
+           COALESCE(SUM(matches.win),0) as wins,
+           COUNT(DISTINCT matches.match_num) as matches,
+           omw.omw
+    FROM players LEFT JOIN matches ON players.player_id = matches.player_id
+    LEFT JOIN omw ON players.player_id = omw.player_id
+    GROUP BY players.player_id, omw.omw
+    ORDER BY 3 DESC, 5 DESC;
     '''
     c.execute(query)
     standing = c.fetchall()
@@ -110,13 +128,11 @@ def reportMatch(winner, loser):
     c.execute(query)
     n = c.fetchone()[0]
     query = '''
-    insert into matches values (%s, %s, 1);
+    insert into matches values (%s, %s, %s, 1);
+    insert into matches values (%s, %s, %s, 0);
     '''
-    c.execute(query, (n,winner))
-    query='''
-    insert into matches values (%s, %s, 0);
-    '''
-    c.execute(query, (n,loser))
+    c.execute(query, (n, winner, loser,
+                      n, loser, winner))
     db.commit()
     db.close()
 
@@ -137,6 +153,7 @@ def swissPairings():
         name2: the second player's name
     """
     standings=playerStandings()
+    print standings
     ranking=0
     matches=[]
     for round in range(0,int(countPlayers()/2.)):
