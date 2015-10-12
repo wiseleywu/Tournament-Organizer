@@ -139,6 +139,7 @@ def demoMode():
     initTournament()
     deleteMatches()
     deletePlayers()
+    deleteBye()
     while True:
         choice=input('''
 How many players would you want to see?
@@ -154,7 +155,7 @@ I can do maximum of 32
             for name in names[:choice]:
                 registerPlayer(name)
             standings = playerStandings()
-            for n in range(int(log(countPlayers(),2))):
+            for n in range(int(round(log(countPlayers(),2)))):
                 print 'Round %s Standings' % str(n)
                 pairings = swissPairings(True)
                 for pairing in pairings:
