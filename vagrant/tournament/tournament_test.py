@@ -3,6 +3,7 @@
 # Test cases for tournament.py
 
 from tournament import *
+from math import log
 
 def testDeleteMatches():
     deleteMatches()
@@ -124,9 +125,7 @@ def testPairings():
             "After one match, players with one win should be paired.")
     print "8. After one match, players with one win are paired."
 
-def testOMW():
-    deleteMatches()
-    deletePlayers()
+def demoMode():
     names=['Georgiana Monteleon',
            'Earlie Seward','Kizzy Higgin','Abdul Ulm','Theressa Kemmer',
            'Denis Redington','Anita Matus','Delila Palacios','urtis Sollers',
@@ -135,15 +134,34 @@ def testOMW():
            'Queen Roque','Ervin Kissane','Branda Eldridge','Debbie Kyker',
            'Idalia Hacker','Geoffrey Honda','Shayna Cessna','Sadie Parkhill',
            'Gertha Kyllonen','Eliseo Lettinga','Norbert Mannella',
-           'Noel King','James Franco']
-    for name in names:
-        registerPlayer(name)
-    standings = playerStandings()
-    for n in range(5):
-        pairings = swissPairings()
-        for pairing in pairings:
-            reportMatch(pairing[0],pairing[2])
-
+           'Noel King','Hermelinda Mark', 'Merrill Burgdorf','Theo Going']
+    initConnect()
+    initTournament()
+    deleteMatches()
+    deletePlayers()
+    while True:
+        choice=input('''
+How many players would you want to see?
+I can do maximum of 32
+''')
+        assert type(choice) is int, "Sorry, but I do not understand."
+        if choice > 32:
+            print "Sorry, but I only have 32 preset names!"
+        elif choice <= 0:
+            print "Not to sound smart, but you can't play with negative or zero players"
+        else:
+            shuffle(names)
+            for name in names[:choice]:
+                registerPlayer(name)
+            standings = playerStandings()
+            for n in range(int(log(countPlayers(),2))):
+                print 'Round %s Standings' % str(n)
+                pairings = swissPairings(True)
+                for pairing in pairings:
+                    reportMatch(pairing[0],pairing[2])
+            print 'Final Round Standings'
+            printStandings(playerStandings())
+            break
 if __name__ == '__main__':
 #    testDeleteMatches()
 #    testDelete()
@@ -153,6 +171,17 @@ if __name__ == '__main__':
 #    testStandingsBeforeMatches()
 #    testReportMatches()
 #    testPairings()
-    testOMW()
-    print playerStandings()
-    print "Success!  All tests pass!"
+#    print "Success!  All tests pass!"
+    while True:
+        choice = input('''
+Welcome to tournament planning system. For demo mode, please
+press 1. To exit, please press 3. Otherwise, please press 2.
+''')
+        assert type(choice) is int, "Sorry, but I do not understand."
+        if choice == 1:
+            demoMode()
+            break
+        if choice == 3:
+            break
+        else:
+            print "Sorry, function not implemented yet"

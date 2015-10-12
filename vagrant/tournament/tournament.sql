@@ -14,5 +14,6 @@ create table players(player_id serial primary key, name text);
 create table matches(match_num integer,
                      player_id integer references players,
                      play_against integer references players,
-                     win integer);
+                     wins integer,
+                     points integer);
 create sequence number;
