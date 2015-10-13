@@ -231,6 +231,7 @@ def swissPairings(printing=False):
                 bye=standings.pop(n)
                 updateBye(bye)
                 break
+#    reorderedStandings=rematchProof(standings)
     for round in range(0,int(countPlayers()/2.)):
         matches.append((standings[ranking][0],
                         standings[ranking][1],
@@ -238,6 +239,47 @@ def swissPairings(printing=False):
                         standings[ranking+1][1]))
         ranking+=2
     return matches
+
+# def rematchProof(standings):
+#     """
+#     Update the order of current player standings to prevent players rematch
+#     Arg:
+#         standings: a list of tuples from swissPairings() with current standing
+#         of the players - (id, name, matches, wins, omw, points)
+#
+#     return:
+#         reordered list of the original that doesn't have any rematch
+#     """
+#     db=connect()
+#     c=db.cursor()
+#     c.execute('SELECT DISTINCT player_id, play_against FROM matches;')
+#     matchList = c.fetchall()
+#     db.close()
+#     # for x in standings:
+#     #     print x[0]
+#     print matchList
+#     loop=0
+#     while loop<=10:
+#         for row in range(0,len(standings)-1,2):
+#             if (standings[row][0],standings[row+1][0]) in matchList:
+#                 loop+=1
+#                 print 'currently at row' + str(row)
+#                 for x in standings:
+#                     print x[0],
+#                 if row == len(standings)-2:
+#                     x=standings.pop(row)
+#                     standings.insert(row-1,x)
+#                 else:
+#                     x=standings.pop(row+1)
+#                     standings.insert(row+2,x)
+#                 break
+#             else:
+#                 continue
+#         else:
+#             break
+#     for x in standings:
+#         print x[0],
+#     return standings
 
 def updateBye(bye):
     """
@@ -248,7 +290,7 @@ def updateBye(bye):
     counting total matches for each player)
 
     Arg:
-        bye: a poped list from swissPairings() with current standing of the
+        bye: a popped tuple from swissPairings() with current standing of the
              selected player - (id, name, matches, wins, omw, points)
     """
     db = connect()

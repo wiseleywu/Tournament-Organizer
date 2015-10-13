@@ -163,16 +163,8 @@ I can do maximum of 32
             print 'Final Round Standings'
             printStandings(playerStandings())
             break
-if __name__ == '__main__':
-#    testDeleteMatches()
-#    testDelete()
-#    testCount()
-#    testRegister()
-#    testRegisterCountDelete()
-#    testStandingsBeforeMatches()
-#    testReportMatches()
-#    testPairings()
-#    print "Success!  All tests pass!"
+
+def interactiveMode():
     while True:
         choice = input('''
 Welcome to tournament planning system. For demo mode, please
@@ -186,3 +178,15 @@ press 1. To exit, please press 3. Otherwise, please press 2.
             break
         else:
             print "Sorry, function not implemented yet"
+
+if __name__ == '__main__':
+#    testDeleteMatches()
+#    testDelete()
+#    testCount()
+#    testRegister()
+#    testRegisterCountDelete()
+#    testStandingsBeforeMatches()
+#    testReportMatches()
+#    testPairings()
+#    print "Success!  All tests pass!"
+    interactiveMode()
