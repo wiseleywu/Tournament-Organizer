@@ -4,6 +4,7 @@
 #
 
 import psycopg2
+from math import log
 from random import choice, shuffle, randint
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
@@ -112,7 +113,7 @@ def registerPlayer(name):
     db.commit()
     db.close()
 
-def playerStandings():
+def playerStandings(extended=False):
     """Returns a list of the players and their win records, sorted by wins and
     omw.
 
@@ -130,48 +131,69 @@ def playerStandings():
              players they have played against
        points: the player's current points earned from win/lose/draw
     """
-    db = connect()
-    c = db.cursor()
-    query = '''
-    CREATE VIEW omw AS
-      SELECT x.player_id,
-             SUM(y.omw) as omw
-      FROM
-      (
-        SELECT DISTINCT player_id, play_against
-        FROM matches
-      ) as x
-      RIGHT JOIN
-      (
+    if extended==True:
+        db = connect()
+        c = db.cursor()
+        query = '''
+        CREATE VIEW omw AS
+          SELECT x.player_id,
+                 SUM(y.omw) as omw
+          FROM
+          (
+            SELECT DISTINCT player_id, play_against
+            FROM matches
+          ) as x
+          RIGHT JOIN
+          (
+            SELECT players.player_id,
+                   COALESCE(SUM(matches.wins),0) as omw
+            FROM players LEFT JOIN matches
+            ON players.player_id = matches.player_id
+            GROUP BY players.player_id
+          ) as y
+          ON x.play_against = y.player_id
+          GROUP BY 1
+          ORDER BY 2 DESC;
+
         SELECT players.player_id,
-               COALESCE(SUM(matches.wins),0) as omw
-        FROM players LEFT JOIN matches
-        ON players.player_id = matches.player_id
-        GROUP BY players.player_id
-      ) as y
-      ON x.play_against = y.player_id
-      GROUP BY 1
-      ORDER BY 2 DESC;
+               players.name,
+               COUNT(DISTINCT matches.match_num) as matches,
+               COALESCE(SUM(matches.wins),0) as wins,
+               COALESCE(omw.omw,0),
+               COALESCE(SUM(matches.points),0) as points,
+               bye.bye as bye
+        FROM players LEFT JOIN matches ON players.player_id = matches.player_id
+        LEFT JOIN omw ON players.player_id = omw.player_id
+        JOIN bye ON players.player_id = bye.player_id
+        GROUP BY players.player_id, omw.omw, bye
+        ORDER BY 4 DESC, 5 DESC;
+        '''
+        c.execute(query)
+        standing = c.fetchall()
+        db.close()
+        return standing
+    else:
+        db = connect()
+        c = db.cursor()
+        query = '''
+        CREATE VIEW short_standing AS
+            SELECT players.player_id,
+                   players.name,
+                   COALESCE(SUM(matches.wins),0) as wins,
+                   COUNT(DISTINCT matches.match_num) as matches
+            FROM players LEFT JOIN matches
+            ON players.player_id = matches.player_id
+            GROUP BY players.player_id
+            ORDER BY wins DESC;
 
-    SELECT players.player_id,
-           players.name,
-           COUNT(DISTINCT matches.match_num) as matches,
-           COALESCE(SUM(matches.wins),0) as wins,
-           COALESCE(omw.omw,0),
-           COALESCE(SUM(matches.points),0) as points,
-           bye.bye as bye
-    FROM players LEFT JOIN matches ON players.player_id = matches.player_id
-    LEFT JOIN omw ON players.player_id = omw.player_id
-    JOIN bye ON players.player_id = bye.player_id
-    GROUP BY players.player_id, omw.omw, bye
-    ORDER BY 4 DESC, 5 DESC;
-    '''
-    c.execute(query)
-    standing = c.fetchall()
-    db.close()
-    return standing
+        SELECT * FROM short_standing;
+        '''
+        c.execute(query)
+        standing = c.fetchall()
+        db.close()
+        return standing
 
-def reportMatch(player1, player2):
+def reportMatch(player1, player2, random=False):
     """Records the outcome of a single match between two players.
 
     Args:
@@ -185,7 +207,10 @@ def reportMatch(player1, player2):
     '''
     c.execute(query)
     n = c.fetchone()[0]
-    (player1_point, player1_win, player2_point, player2_win) = coinToss()
+    if random==True:
+        (player1_point, player1_win, player2_point, player2_win) = coinToss()
+    else:
+        (player1_point, player1_win, player2_point, player2_win) = (3, 1, 0, 0)
     query = '''
     INSERT INTO matches VALUES (%s, %s, %s, %s, %s);
     INSERT INTO matches VALUES (%s, %s, %s, %s, %s);
@@ -214,7 +239,7 @@ def swissPairings(printing=False):
         id2: the second player's unique id
         name2: the second player's name
     """
-    standings=playerStandings()
+    standings=playerStandings(True)
     if printing==True:
         printStandings(standings)
     ranking=0
@@ -320,6 +345,7 @@ def coinToss():
     player2_point: point received by player 2 (either 0, 1, or 3)
     player2_win: number of win received by player 2 (either 1 or 0)
     """
+
     player1_point=choice([0,1,3])
     if player1_point == 1:
         (player1_win, player2_point, player2_win) = (0, 1, 0)
@@ -334,11 +360,14 @@ def printStandings(standings):
     Print the current Player Standings in a left-alinging format
 
     Args:
-      standings: output from playerStandings()
+      standings: output from playerStandings(True)
     """
 
     column_width=20
-    headers=('player ID', 'Name','Matches', 'Wins','OMW','Points','BYE')
+    if len(standings)==4:
+        headers=('player ID', 'Name','Wins', 'Matches')
+    else:
+        headers=('player ID', 'Name','Matches', 'Wins','OMW','Points','BYE')
     for header in headers:
         print header.ljust(column_width),
     print
@@ -347,3 +376,61 @@ def printStandings(standings):
             print str(data).ljust(column_width),
         print
     print
+
+def demoMode():
+    names=['Georgiana Monteleon',
+           'Earlie Seward','Kizzy Higgin','Abdul Ulm','Theressa Kemmer',
+           'Denis Redington','Anita Matus','Delila Palacios','urtis Sollers',
+           'Beatrice Jolley','Marcelle Rahm','Tania Rishel','Ivana Griffey',
+           'Delmy Paluch','Shona Baity','Lula Benavidez','Genny Tapia',
+           'Queen Roque','Ervin Kissane','Branda Eldridge','Debbie Kyker',
+           'Idalia Hacker','Geoffrey Honda','Shayna Cessna','Sadie Parkhill',
+           'Gertha Kyllonen','Eliseo Lettinga','Norbert Mannella',
+           'Noel King','Hermelinda Mark', 'Merrill Burgdorf','Theo Going']
+    initConnect()
+    initTournament()
+    deleteMatches()
+    deletePlayers()
+    deleteBye()
+    while True:
+        choice=input('''
+How many players would you want to see?
+I can do maximum of 32
+''')
+        assert type(choice) is int, "Sorry, but I do not understand."
+        if choice > 32:
+            print "Sorry, but I only have 32 preset names!"
+        elif choice <= 0:
+            print "Not to sound smart, but you can't play with negative or zero players"
+        else:
+            shuffle(names)
+            for name in names[:choice]:
+                registerPlayer(name)
+            standings = playerStandings(True)
+            for n in range(int(round(log(countPlayers(),2)))):
+                print 'Round %s Standings' % str(n)
+                pairings = swissPairings(True)
+                for pairing in pairings:
+                    reportMatch(pairing[0],pairing[2], True)
+            print 'Final Round Standings'
+            printStandings(playerStandings(True))
+            break
+
+def interactiveMode():
+    while True:
+        choice = input('''
+Welcome to tournament planning system. For demo mode, please
+press 1. To exit, please press 3. Otherwise, please press 2.
+''')
+        assert type(choice) is int, "Sorry, but I do not understand."
+        if choice == 1:
+            demoMode()
+            break
+        if choice == 3:
+            break
+        else:
+            print "Sorry, function not implemented yet"
+
+
+if __name__ == '__main__':
+    interactiveMode()

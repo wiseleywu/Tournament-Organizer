@@ -3,7 +3,6 @@
 # Test cases for tournament.py
 
 from tournament import *
-from math import log
 
 def testDeleteMatches():
     deleteMatches()
@@ -125,68 +124,14 @@ def testPairings():
             "After one match, players with one win should be paired.")
     print "8. After one match, players with one win are paired."
 
-def demoMode():
-    names=['Georgiana Monteleon',
-           'Earlie Seward','Kizzy Higgin','Abdul Ulm','Theressa Kemmer',
-           'Denis Redington','Anita Matus','Delila Palacios','urtis Sollers',
-           'Beatrice Jolley','Marcelle Rahm','Tania Rishel','Ivana Griffey',
-           'Delmy Paluch','Shona Baity','Lula Benavidez','Genny Tapia',
-           'Queen Roque','Ervin Kissane','Branda Eldridge','Debbie Kyker',
-           'Idalia Hacker','Geoffrey Honda','Shayna Cessna','Sadie Parkhill',
-           'Gertha Kyllonen','Eliseo Lettinga','Norbert Mannella',
-           'Noel King','Hermelinda Mark', 'Merrill Burgdorf','Theo Going']
-    initConnect()
-    initTournament()
-    deleteMatches()
-    deletePlayers()
-    deleteBye()
-    while True:
-        choice=input('''
-How many players would you want to see?
-I can do maximum of 32
-''')
-        assert type(choice) is int, "Sorry, but I do not understand."
-        if choice > 32:
-            print "Sorry, but I only have 32 preset names!"
-        elif choice <= 0:
-            print "Not to sound smart, but you can't play with negative or zero players"
-        else:
-            shuffle(names)
-            for name in names[:choice]:
-                registerPlayer(name)
-            standings = playerStandings()
-            for n in range(int(round(log(countPlayers(),2)))):
-                print 'Round %s Standings' % str(n)
-                pairings = swissPairings(True)
-                for pairing in pairings:
-                    reportMatch(pairing[0],pairing[2])
-            print 'Final Round Standings'
-            printStandings(playerStandings())
-            break
-
-def interactiveMode():
-    while True:
-        choice = input('''
-Welcome to tournament planning system. For demo mode, please
-press 1. To exit, please press 3. Otherwise, please press 2.
-''')
-        assert type(choice) is int, "Sorry, but I do not understand."
-        if choice == 1:
-            demoMode()
-            break
-        if choice == 3:
-            break
-        else:
-            print "Sorry, function not implemented yet"
 
 if __name__ == '__main__':
-#    testDeleteMatches()
-#    testDelete()
-#    testCount()
-#    testRegister()
-#    testRegisterCountDelete()
-#    testStandingsBeforeMatches()
-#    testReportMatches()
-#    testPairings()
-#    print "Success!  All tests pass!"
-    interactiveMode()
+    testDeleteMatches()
+    testDelete()
+    testCount()
+    testRegister()
+    testRegisterCountDelete()
+    testStandingsBeforeMatches()
+    testReportMatches()
+    testPairings()
+    print "Success!  All tests pass!"
