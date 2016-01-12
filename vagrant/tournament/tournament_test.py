@@ -126,6 +126,8 @@ def testPairings():
 
 
 if __name__ == '__main__':
+    initConnect()
+    initTournament()
     testDeleteMatches()
     testDelete()
     testCount()
