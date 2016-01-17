@@ -8,21 +8,24 @@ from math import log
 from random import choice, shuffle, randint
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
+
 def initConnect():
     """
     Connect to the default PostgreSQL database 'postgres' and create database
     'tournament'.
     """
-    db=psycopg2.connect("dbname=postgres")
+    db = psycopg2.connect("dbname=postgres")
     db.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     c = db.cursor()
     c.execute('DROP database IF EXISTS tournament;')
     c.execute('CREATE database tournament;')
     db.close()
 
+
 def connect():
     """Connect to the PostgreSQL database.  Returns a database connection."""
     return psycopg2.connect("dbname=tournament")
+
 
 def initTournament():
     """Connect to the PostgreSQL database 'tournament' and initialize the
@@ -46,6 +49,7 @@ def initTournament():
     db.commit()
     db.close()
 
+
 def deleteMatches():
     """Remove all the match records from the database."""
     db = connect()
@@ -56,6 +60,7 @@ def deleteMatches():
     c.execute(query)
     db.commit()
     db.close()
+
 
 def deletePlayers():
     """Remove all the player records from the database."""
@@ -68,6 +73,7 @@ def deletePlayers():
     db.commit()
     db.close()
 
+
 def deleteBye():
     """Remove all the player BYE records from the database."""
     db = connect()
@@ -78,6 +84,7 @@ def deleteBye():
     c.execute(query)
     db.commit()
     db.close()
+
 
 def countPlayers():
     """Returns the number of players currently registered."""
@@ -90,6 +97,7 @@ def countPlayers():
     count = c.fetchone()
     db.close()
     return count[0]
+
 
 def registerPlayer(name):
     """Adds a player to the tournament database.
@@ -113,6 +121,7 @@ def registerPlayer(name):
     db.commit()
     db.close()
 
+
 def playerStandings(extended=False):
     """Returns a list of the players and their win records, sorted by wins and
     omw.
@@ -131,7 +140,7 @@ def playerStandings(extended=False):
              players they have played against
        points: the player's current points earned from win/lose/draw
     """
-    if extended==True:
+    if extended:
         db = connect()
         c = db.cursor()
         query = '''
@@ -193,6 +202,7 @@ def playerStandings(extended=False):
         db.close()
         return standing
 
+
 def reportMatch(player1, player2, random=False):
     """Records the outcome of a single match between two players.
 
@@ -202,12 +212,12 @@ def reportMatch(player1, player2, random=False):
     """
     db = connect()
     c = db.cursor()
-    query='''
+    query = '''
     SELECT NEXTVAL('number');
     '''
     c.execute(query)
     n = c.fetchone()[0]
-    if random==True:
+    if random:
         (player1_point, player1_win, player2_point, player2_win) = coinToss()
     else:
         (player1_point, player1_win, player2_point, player2_win) = (3, 1, 0, 0)
@@ -219,6 +229,7 @@ def reportMatch(player1, player2, random=False):
                       n, player2, player1, player2_win, player2_point))
     db.commit()
     db.close()
+
 
 def swissPairings(printing=False):
     """Returns a list of pairs of players for the next round of a match.
@@ -239,30 +250,30 @@ def swissPairings(printing=False):
         id2: the second player's unique id
         name2: the second player's name
     """
-    standings=playerStandings(True)
-    if printing==True:
+    standings = playerStandings(True)
+    if printing:
         printStandings(standings)
-    ranking=0
-    matches=[]
-    bye=[]
-    if countPlayers()%2==0:
+    ranking = 0
+    matches = []
+    bye = []
+    if countPlayers() % 2 == 0:
         pass
     else:
         while True:
-            n=randint(0,countPlayers()-1)
+            n = randint(0, countPlayers()-1)
             if standings[n][-1]:
                 pass
             else:
-                bye=standings.pop(n)
+                bye = standings.pop(n)
                 updateBye(bye)
                 break
 #    reorderedStandings=rematchProof(standings)
-    for round in range(0,int(countPlayers()/2.)):
+    for round in range(0, int(countPlayers()/2.)):
         matches.append((standings[ranking][0],
                         standings[ranking][1],
                         standings[ranking+1][0],
                         standings[ranking+1][1]))
-        ranking+=2
+        ranking += 2
     return matches
 
 # def rematchProof(standings):
@@ -306,6 +317,7 @@ def swissPairings(printing=False):
 #         print x[0],
 #     return standings
 
+
 def updateBye(bye):
     """
     Update bye status of a selected player to TRUE in table 'bye'.
@@ -329,6 +341,7 @@ def updateBye(bye):
     db.commit()
     db.close()
 
+
 def coinToss():
     """Returns a tuple of player 1 and player 2's points received and number of
        win received
@@ -346,7 +359,7 @@ def coinToss():
     player2_win: number of win received by player 2 (either 1 or 0)
     """
 
-    player1_point=choice([0,1,3])
+    player1_point = choice([0, 1, 3])
     if player1_point == 1:
         (player1_win, player2_point, player2_win) = (0, 1, 0)
     elif player1_point == 0:
@@ -354,6 +367,7 @@ def coinToss():
     else:
         (player1_win, player2_point, player2_win) = (1, 0, 0)
     return (player1_point, player1_win, player2_point, player2_win)
+
 
 def printStandings(standings):
     """
@@ -363,11 +377,12 @@ def printStandings(standings):
       standings: output from playerStandings(True)
     """
 
-    column_width=20
-    if len(standings)==4:
-        headers=('player ID', 'Name','Wins', 'Matches')
+    column_width = 20
+    if len(standings) == 4:
+        headers = ('player ID', 'Name', 'Wins', 'Matches')
     else:
-        headers=('player ID', 'Name','Matches', 'Wins','OMW','Points','BYE')
+        headers = ('player ID', 'Name', 'Matches',
+                   'Wins', 'OMW', 'Points', 'BYE')
     for header in headers:
         print header.ljust(column_width),
     print
@@ -377,23 +392,25 @@ def printStandings(standings):
         print
     print
 
+
 def demoMode():
-    names=['Georgiana Monteleon',
-           'Earlie Seward','Kizzy Higgin','Abdul Ulm','Theressa Kemmer',
-           'Denis Redington','Anita Matus','Delila Palacios','urtis Sollers',
-           'Beatrice Jolley','Marcelle Rahm','Tania Rishel','Ivana Griffey',
-           'Delmy Paluch','Shona Baity','Lula Benavidez','Genny Tapia',
-           'Queen Roque','Ervin Kissane','Branda Eldridge','Debbie Kyker',
-           'Idalia Hacker','Geoffrey Honda','Shayna Cessna','Sadie Parkhill',
-           'Gertha Kyllonen','Eliseo Lettinga','Norbert Mannella',
-           'Noel King','Hermelinda Mark', 'Merrill Burgdorf','Theo Going']
+    names = ['Georgiana Monteleon',
+             'Earlie Seward', 'Kizzy Higgin', 'Abdul Ulm', 'Theressa Kemmer',
+             'Denis Redington', 'Anita Matus', 'Delila Palacios',
+             'urtis Sollers', 'Beatrice Jolley', 'Marcelle Rahm',
+             'Tania Rishel', 'Ivana Griffey', 'Delmy Paluch', 'Shona Baity',
+             'Lula Benavidez', 'Genny Tapia', 'Queen Roque', 'Ervin Kissane',
+             'Branda Eldridge', 'Debbie Kyker', 'Idalia Hacker',
+             'Geoffrey Honda', 'Shayna Cessna', 'Sadie Parkhill',
+             'Gertha Kyllonen', 'Eliseo Lettinga', 'Norbert Mannella',
+             'Noel King', 'Hermelinda Mark', 'Merrill Burgdorf', 'Theo Going']
     initConnect()
     initTournament()
     deleteMatches()
     deletePlayers()
     deleteBye()
     while True:
-        choice=input('''
+        choice = input('''
 How many players would you want to see?
 I can do maximum of 32
 ''')
@@ -401,20 +418,22 @@ I can do maximum of 32
         if choice > 32:
             print "Sorry, but I only have 32 preset names!"
         elif choice <= 0:
-            print "Not to sound smart, but you can't play with negative or zero players"
+            print "Not to sound smart, "
+            "but you can't play with negative or zero players"
         else:
             shuffle(names)
             for name in names[:choice]:
                 registerPlayer(name)
             standings = playerStandings(True)
-            for n in range(int(round(log(countPlayers(),2)))):
+            for n in range(int(round(log(countPlayers(), 2)))):
                 print 'Round %s Standings' % str(n)
                 pairings = swissPairings(True)
                 for pairing in pairings:
-                    reportMatch(pairing[0],pairing[2], True)
+                    reportMatch(pairing[0], pairing[2], True)
             print 'Final Round Standings'
             printStandings(playerStandings(True))
             break
+
 
 def interactiveMode():
     while True:
