@@ -9,7 +9,7 @@ from random import choice, shuffle, randint
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 
-def initConnect():
+def init_connect():
     """
     Connect to the default PostgreSQL database 'postgres' and create database
     'tournament'.
@@ -27,7 +27,7 @@ def connect():
     return psycopg2.connect("dbname=tournament")
 
 
-def initTournament():
+def init_tournament():
     """Connect to the PostgreSQL database 'tournament' and initialize the
        database with necessary tables and sequence
        """
@@ -50,7 +50,7 @@ def initTournament():
     db.close()
 
 
-def deleteMatches():
+def delete_matches():
     """Remove all the match records from the database."""
     db = connect()
     c = db.cursor()
@@ -62,7 +62,7 @@ def deleteMatches():
     db.close()
 
 
-def deletePlayers():
+def delete_players():
     """Remove all the player records from the database."""
     db = connect()
     c = db.cursor()
@@ -74,7 +74,7 @@ def deletePlayers():
     db.close()
 
 
-def deleteBye():
+def delete_bye():
     """Remove all the player BYE records from the database."""
     db = connect()
     c = db.cursor()
@@ -86,7 +86,7 @@ def deleteBye():
     db.close()
 
 
-def countPlayers():
+def count_players():
     """Returns the number of players currently registered."""
     db = connect()
     c = db.cursor()
@@ -99,14 +99,14 @@ def countPlayers():
     return count[0]
 
 
-def registerPlayer(name):
+def register_player(name):
     """Adds a player to the tournament database.
 
     The database assigns a unique serial id number for the player in two
-    different database: players and bye. Players database has the full name
-    associated to that id number, while bye database has the bye status
-    associated to that id number. (This should be handled by your SQL database
-    schema, not in your Python code.)
+    different database: players and bye. Players database has the full
+    name associated to that id number, while bye database has the bye
+    status associated to that id number. (This should be handled by your
+    SQL database schema, not in your Python code.)
 
     Args:
       name: the player's full name (need not be unique).
@@ -122,12 +122,12 @@ def registerPlayer(name):
     db.close()
 
 
-def playerStandings(extended=False):
-    """Returns a list of the players and their win records, sorted by wins and
-    omw.
+def player_standings(extended=False):
+    """Returns a list of the players and their win records, sorted by
+    wins, omw, and points.
 
-    The first entry in the list should be the player in first place, or a player
-    tied for first place if there is currently a tie.
+    The first entry in the list should be the player in first place,
+    or a player tied for first place if there is currently a tie.
 
     Returns:
       A list of tuples, each of which contains
@@ -136,8 +136,8 @@ def playerStandings(extended=False):
         name: the player's full name (as registered)
         matches: the number of matches the player has played
         wins: the number of matches the player has won
-        omw: the player's OMW (Opponent Match Wins), the total number of wins by
-             players they have played against
+        omw: the player's OMW (Opponent Match Wins), the total
+             number of wins by players they have played against
        points: the player's current points earned from win/lose/draw
     """
     if extended:
@@ -175,7 +175,7 @@ def playerStandings(extended=False):
         LEFT JOIN omw ON players.player_id = omw.player_id
         JOIN bye ON players.player_id = bye.player_id
         GROUP BY players.player_id, omw.omw, bye
-        ORDER BY 4 DESC, 5 DESC;
+        ORDER BY 4 DESC, 5 DESC, 6 DESC;
         '''
         c.execute(query)
         standing = c.fetchall()
@@ -203,7 +203,7 @@ def playerStandings(extended=False):
         return standing
 
 
-def reportMatch(player1, player2, random=False):
+def report_match(player1, player2, random=False):
     """Records the outcome of a single match between two players.
 
     Args:
@@ -218,7 +218,7 @@ def reportMatch(player1, player2, random=False):
     c.execute(query)
     n = c.fetchone()[0]
     if random:
-        (player1_point, player1_win, player2_point, player2_win) = coinToss()
+        (player1_point, player1_win, player2_point, player2_win) = coin_toss()
     else:
         (player1_point, player1_win, player2_point, player2_win) = (3, 1, 0, 0)
     query = '''
@@ -231,17 +231,18 @@ def reportMatch(player1, player2, random=False):
     db.close()
 
 
-def swissPairings(printing=False):
+def swiss_pairings(printing=False):
     """Returns a list of pairs of players for the next round of a match.
 
-    Assuming that there are an even number of players registered, each player
-    appears exactly once in the pairings.  Each player is paired with another
-    player with an equal or nearly-equal win record, that is, a player adjacent
-    to him or her in the standings.
+    Assuming that there are an even number of players registered, each
+    player appears exactly once in the pairings.  Each player is paired
+    with another player with an equal or nearly-equal win record, that
+    is, a player adjacent to him or her in the standings.
 
     Args:
-      printing: For demo mode. If True, the function will call printStandings()
-      and print out a table of current player standings before the next round
+      printing: For demo mode. If True, the function will call
+                print_standings() and print out a table of current
+                player standings before the next round
 
     Returns:
       A list of tuples, each of which contains (id1, name1, id2, name2)
@@ -250,25 +251,25 @@ def swissPairings(printing=False):
         id2: the second player's unique id
         name2: the second player's name
     """
-    standings = playerStandings(True)
+    standings = player_standings(True)
     if printing:
-        printStandings(standings)
+        print_standings(standings)
     ranking = 0
     matches = []
     bye = []
-    if countPlayers() % 2 == 0:
+    if count_players() % 2 == 0:
         pass
     else:
         while True:
-            n = randint(0, countPlayers()-1)
+            n = randint(0, count_players()-1)
             if standings[n][-1]:
                 pass
             else:
                 bye = standings.pop(n)
-                updateBye(bye)
+                update_bye(bye)
                 break
 #    reorderedStandings=rematchProof(standings)
-    for round in range(0, int(countPlayers()/2.)):
+    for round in range(0, int(count_players()/2.)):
         matches.append((standings[ranking][0],
                         standings[ranking][1],
                         standings[ranking+1][0],
@@ -280,7 +281,8 @@ def swissPairings(printing=False):
 #     """
 #     Update the order of current player standings to prevent players rematch
 #     Arg:
-#         standings: a list of tuples from swissPairings() with current standing
+#         standings: a list of tuples from swiss_pairings() with
+#                    current standing
 #         of the players - (id, name, matches, wins, omw, points)
 #
 #     return:
@@ -318,16 +320,16 @@ def swissPairings(printing=False):
 #     return standings
 
 
-def updateBye(bye):
+def update_bye(bye):
     """
     Update bye status of a selected player to TRUE in table 'bye'.
     Also create new row in table 'matches' with player's win, and point.
     A bye game is equal to 1 win and 3 points. A bye game is not assigned with
-    any match_num (in order for playerStandings() to ignore BYE game when
+    any match_num (in order for player_standings() to ignore BYE game when
     counting total matches for each player)
 
     Arg:
-        bye: a popped tuple from swissPairings() with current standing of the
+        bye: a popped tuple from swiss_pairings() with current standing of the
              selected player - (id, name, matches, wins, omw, points)
     """
     db = connect()
@@ -342,14 +344,14 @@ def updateBye(bye):
     db.close()
 
 
-def coinToss():
+def coin_toss():
     """Returns a tuple of player 1 and player 2's points received and number of
        win received
 
     Used in demo mode to generate random events of player winning, losing, or
-    drawing. For each call of coinToss(), players receive 3 points, 1 points,
+    drawing. For each call of coin_toss(), players receive 3 points, 1 points,
     or 0 points for winning, drawing, or losing respectively. Players will also
-    receive 1 or 0 win for each call of coinToss().
+    receive 1 or 0 win for each call of coin_toss().
 
     Returns:
     A tuple contains (player1_point, player1_win, player2_point, player2_win)
@@ -369,12 +371,12 @@ def coinToss():
     return (player1_point, player1_win, player2_point, player2_win)
 
 
-def printStandings(standings):
+def print_standings(standings):
     """
     Print the current Player Standings in a left-alinging format
 
     Args:
-      standings: output from playerStandings(True)
+      standings: output from player_standings(True)
     """
 
     column_width = 20
@@ -393,7 +395,7 @@ def printStandings(standings):
     print
 
 
-def demoMode():
+def demo_mode():
     names = ['Georgiana Monteleon',
              'Earlie Seward', 'Kizzy Higgin', 'Abdul Ulm', 'Theressa Kemmer',
              'Denis Redington', 'Anita Matus', 'Delila Palacios',
@@ -404,11 +406,11 @@ def demoMode():
              'Geoffrey Honda', 'Shayna Cessna', 'Sadie Parkhill',
              'Gertha Kyllonen', 'Eliseo Lettinga', 'Norbert Mannella',
              'Noel King', 'Hermelinda Mark', 'Merrill Burgdorf', 'Theo Going']
-    initConnect()
-    initTournament()
-    deleteMatches()
-    deletePlayers()
-    deleteBye()
+    init_connect()
+    init_tournament()
+    delete_matches()
+    delete_players()
+    delete_bye()
     while True:
         choice = input('''
 How many players would you want to see?
@@ -423,19 +425,19 @@ I can do maximum of 32
         else:
             shuffle(names)
             for name in names[:choice]:
-                registerPlayer(name)
-            standings = playerStandings(True)
-            for n in range(int(round(log(countPlayers(), 2)))):
+                register_player(name)
+            standings = player_standings(True)
+            for n in range(int(round(log(count_players(), 2)))):
                 print 'Round %s Standings' % str(n)
-                pairings = swissPairings(True)
+                pairings = swiss_pairings(True)
                 for pairing in pairings:
-                    reportMatch(pairing[0], pairing[2], True)
+                    report_match(pairing[0], pairing[2], True)
             print 'Final Round Standings'
-            printStandings(playerStandings(True))
+            print_standings(player_standings(True))
             break
 
 
-def interactiveMode():
+def interactive_mode():
     while True:
         choice = input('''
 Welcome to tournament planning system. For demo mode, please
@@ -443,7 +445,7 @@ press 1. To exit, please press 3. Otherwise, please press 2.
 ''')
         assert type(choice) is int, "Sorry, but I do not understand."
         if choice == 1:
-            demoMode()
+            demo_mode()
             break
         if choice == 3:
             break
@@ -452,4 +454,4 @@ press 1. To exit, please press 3. Otherwise, please press 2.
 
 
 if __name__ == '__main__':
-    interactiveMode()
+    interactive_mode()
